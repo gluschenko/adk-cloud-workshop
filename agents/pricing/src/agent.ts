@@ -6,7 +6,7 @@ import { getOurPriceTool } from './tools.ts';
 // combining built-in tools with custom function tools.
 const marketResearchAgent = new LlmAgent({
   name: 'market_research',
-  model: 'gemini-2.5-flash',
+  model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
   description:
     'Searches the public web for current competitor prices and availability of consumer-electronics products.',
   instruction: `You research current market prices for consumer-electronics products using Google Search.
@@ -18,7 +18,7 @@ Report only what the search results support; if results are unclear, say so.`,
 
 export const rootAgent = new LlmAgent({
   name: 'pricing_agent',
-  model: 'gemini-2.5-flash',
+  model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
   description:
     'Compares TechParts prices against the current market: looks up our price and researches competitor prices on the web.',
   instruction: `You are the pricing agent for TechParts, a consumer-electronics retailer. You assist internal staff with pricing decisions.

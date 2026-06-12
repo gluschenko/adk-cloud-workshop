@@ -3,7 +3,7 @@ import { getStockTool, searchProductsTool } from './tools.ts';
 
 export const rootAgent = new LlmAgent({
   name: 'inventory_agent',
-  model: 'gemini-2.5-flash',
+  model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
   description:
     'Answers questions about the TechParts product catalog: which products exist, their prices, current stock levels and warehouse locations.',
   instruction: `You are the inventory agent for TechParts, a consumer-electronics retailer.

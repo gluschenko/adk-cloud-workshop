@@ -30,7 +30,7 @@ const pricingAgent = new RemoteA2AAgent({
 
 export const rootAgent = new LlmAgent({
   name: 'ops_orchestrator',
-  model: 'gemini-2.5-flash',
+  model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
   description:
     'TechParts operations assistant for support staff. Coordinates the inventory, orders and pricing agents to resolve customer cases end-to-end.',
   instruction: `You are the TechParts operations assistant used by internal support staff.

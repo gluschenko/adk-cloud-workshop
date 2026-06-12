@@ -72,6 +72,9 @@ export async function startAgentServer({ agent, port, title }: AgentServerOption
         for (const result of getFunctionResponses(event)) {
           send('tool_result', { agent: event.author, name: result.name, response: result.response });
         }
+        if (event.errorMessage) {
+          send('error', { agent: event.author, message: `${event.errorCode ?? 'error'}: ${event.errorMessage}` });
+        }
         if (isFinalResponse(event)) {
           const text = stringifyContent(event);
           if (text) send('text', { agent: event.author, text });
