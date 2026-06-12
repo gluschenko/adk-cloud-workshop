@@ -1,0 +1,11 @@
+{
+  "name": "@techparts/agent-inventory",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@google/adk": "^1.2.0",
+    "@techparts/shared": "*",
+    "zod": "^4.0.0"
+  }
+}
