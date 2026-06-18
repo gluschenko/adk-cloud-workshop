@@ -67,6 +67,5 @@ agents/orchestrator/   RemoteA2AAgent x3 wrapped as tools — no data of its own
 ```
 
 ## Branches
-
 - `main` — workshop starting point: scaffolding + TODOs
 - `solution` — fully implemented reference
