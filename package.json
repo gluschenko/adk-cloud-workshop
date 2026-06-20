@@ -12,10 +12,7 @@
     "dev:orders": "tsx --env-file-if-exists=.env agents/orders/src/server.ts",
     "dev:pricing": "tsx --env-file-if-exists=.env agents/pricing/src/server.ts",
     "dev:orchestrator": "tsx --env-file-if-exists=.env agents/orchestrator/src/server.ts",
-    "gemma:setup": "powershell -ExecutionPolicy Bypass -File scripts/gemma-setup.ps1",
-    "gemma:download": "onnxify hf download litert-community/gemma-4-E4B-it-litert-lm models/gemma4-e4b-native-q --include gemma-4-E4B-it.litertlm --overwrite",
-    "gemma:import": "powershell -ExecutionPolicy Bypass -File scripts/litert-lm.ps1 import models/gemma4-e4b-native-q/gemma-4-E4B-it.litertlm gemma4-e4b-native-q",
-    "dev:gemma": "powershell -ExecutionPolicy Bypass -File scripts/litert-lm.ps1 serve --host 127.0.0.1 --port 8010",
+    "gemma:warmup": "tsx --env-file-if-exists=.env shared/src/gemma-warmup.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -29,5 +26,7 @@
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0"
+  }
 }

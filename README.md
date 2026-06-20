@@ -15,17 +15,16 @@ over the **A2A protocol** to resolve support cases end-to-end.
 ## Prerequisites
 
 - Node.js >= 24
-- Python >= 3.10. If Python is not in `PATH`, set `PYTHON=C:\path\to\python.exe`.
-- Enough local disk/RAM to download and run `litert-community/gemma-4-E4B-it-litert-lm`
+- Enough local disk/RAM to download and run `onnx-community/gemma-4-E4B-it-ONNX`
+- A Transformers.js release that exports `Gemma4ForConditionalGeneration`
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env
-npm run gemma:setup        # creates .venv and installs litert-lm
-npm run gemma:download     # downloads native quantized gemma-4-E4B-it.litertlm with Onnxify CLI
-npm run gemma:import       # imports the local .litertlm file as gemma4-e4b-native-q
+npm install @huggingface/transformers@latest
+npm run gemma:warmup       # downloads and verifies the Gemma 4 ONNX model
 npm run seed               # creates shared/data/techparts.db
 ```
 
@@ -36,7 +35,6 @@ The dev scripts load `.env` automatically.
 One terminal per service:
 
 ```bash
-npm run dev:gemma          # http://localhost:8010
 npm run dev:inventory      # http://localhost:8001
 npm run dev:orders         # http://localhost:8002
 npm run dev:pricing        # http://localhost:8003
@@ -47,13 +45,12 @@ Open each agent's URL in a browser: every agent ships a **debug console** showin
 the conversation and every tool call/result. Each agent also exposes its A2A
 endpoints (`/.well-known/agent-card.json`, `/rest`, `/jsonrpc`).
 
-All four ADK `LlmAgent`s use the local Gemma service via `GEMMA_SERVICE_URL`;
-they do not call Gemini. `npm run dev:gemma` starts the official LiteRT-LM
-OpenAI-compatible server on port 8010. The `gemma:import` step imports
-`models/gemma4-e4b-native-q/gemma-4-E4B-it.litertlm` into the local LiteRT-LM
-registry as `gemma4-e4b-native-q`; `gemma:download` gets only that native
-quantized LiteRT file through Onnxify CLI. Do not use `gemma-4-E4B-it-web.litertlm`
-with `litert-lm serve`; it is a Web/WebGPU-specific artifact.
+All four ADK `LlmAgent`s use `onnx-community/gemma-4-E4B-it-ONNX` through
+Transformers.js in-process; they do not call Gemini and do not require a
+separate LLM service. `GEMMA_MODEL`, `GEMMA_DEVICE`, and `GEMMA_DTYPE` in `.env`
+control the local model id and ONNX runtime settings. The default device is
+`cpu`; use a Transformers.js-supported accelerator only after verifying it on
+your machine.
 
 The orchestrator finds the workers via env vars (`INVENTORY_AGENT_URL`,
 `ORDERS_AGENT_URL`, `PRICING_AGENT_URL`), defaulting to the local ports above.
@@ -71,7 +68,7 @@ No API key needed for the tests - nothing in them calls the model.
 ## Project layout
 
 ```text
-shared/                SQLite helper, seed script, Gemma OpenAI adapter,
+shared/                SQLite helper, seed script, Gemma ONNX adapter,
                        server harness (debug console + /api/chat SSE + A2A routes)
 agents/inventory/      catalog search + stock tools (SQLite)
 agents/orders/         order lookup + 30-day return policy (SQLite)
