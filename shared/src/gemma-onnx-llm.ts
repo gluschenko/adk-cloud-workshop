@@ -1,9 +1,61 @@
 import { BaseLlm } from '@google/adk';
 import type { BaseLlmConnection, LlmRequest, LlmResponse } from '@google/adk';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-const DEFAULT_GEMMA_MODEL = 'onnx-community/gemma-4-E4B-it-ONNX';
-const DEFAULT_GEMMA_DEVICE = process.platform === 'win32' ? 'dml' : 'cpu';
+type GemmaDevice = 'cuda' | 'dml' | 'webgpu' | 'cpu';
+
+function hasAccessibleNvidiaGpu(): boolean {
+    const cudaVisibleDevices = process.env.CUDA_VISIBLE_DEVICES?.trim();
+
+    if (cudaVisibleDevices === '' || cudaVisibleDevices === '-1') {
+        return false;
+    }
+
+    const command =
+        process.platform === 'win32'
+            ? 'nvidia-smi.exe'
+            : 'nvidia-smi';
+
+    const result = spawnSync(
+        command,
+        ['--query-gpu=index', '--format=csv,noheader'],
+        {
+            encoding: 'utf8',
+            windowsHide: true,
+            timeout: 3_000,
+        },
+    );
+
+    return (
+        result.status === 0 &&
+        typeof result.stdout === 'string' &&
+        result.stdout.trim().length > 0
+    );
+}
+
+function getDefaultGemmaDevice(): GemmaDevice {
+    if (
+        process.platform === 'linux' &&
+        process.arch === 'x64' &&
+        hasAccessibleNvidiaGpu()
+    ) {
+        return 'cuda';
+    }
+
+    if (process.platform === 'darwin') {
+        return 'webgpu';
+    }
+
+    if (process.platform === 'win32') {
+        return 'dml';
+    }
+
+    return 'cpu';
+}
+
+const DEFAULT_GEMMA_MODEL = 'onnx-community/gemma-4-E2B-it-ONNX';
+const DEFAULT_GEMMA_DEVICE = getDefaultGemmaDevice();
 const DEFAULT_GEMMA_DTYPE = 'q4';
 const DEFAULT_GEMMA_API_URL = 'http://localhost:8016';
 const DEFAULT_TRANSFORMERS_CACHE_DIR = path.join(process.cwd(), 'models', 'transformers-cache');
@@ -44,9 +96,9 @@ export class GemmaOnnxLlm extends BaseLlm {
   readonly dtype: string;
 
   constructor({
-    model = process.env.GEMMA_MODEL ?? DEFAULT_GEMMA_MODEL,
-    device = process.env.GEMMA_DEVICE ?? DEFAULT_GEMMA_DEVICE,
-    dtype = process.env.GEMMA_DTYPE ?? DEFAULT_GEMMA_DTYPE,
+    model = process.env.GEMMA_MODEL || DEFAULT_GEMMA_MODEL,
+    device = process.env.GEMMA_DEVICE || DEFAULT_GEMMA_DEVICE,
+    dtype = process.env.GEMMA_DTYPE || DEFAULT_GEMMA_DTYPE,
   }: {
     model?: string;
     device?: string;

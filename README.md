@@ -21,7 +21,7 @@ assistant UI backed by the same orchestrator agent as the debug console.
 
 - Node.js >= 24
 - Docker Desktop, only if you want the one-container run
-- Enough local disk/RAM to download and run `onnx-community/gemma-4-E4B-it-ONNX`
+- Enough local disk/RAM to download and run `onnx-community/gemma-4-E2B-it-ONNX`
 - A Transformers.js release that exports `Gemma4ForConditionalGeneration`
 
 ## Setup
@@ -80,13 +80,13 @@ Cart behavior:
 
 All four ADK `LlmAgent`s call the shared local Gemma service via
 `GEMMA_API_URL`; they do not call Gemini. `npm run dev:gemma` loads
-`onnx-community/gemma-4-E4B-it-ONNX` once through Transformers.js and exposes an
+`onnx-community/gemma-4-E2B-it-ONNX` once through Transformers.js and exposes an
 ADK-friendly `/v1/adk/generate` API.
 
 Useful environment variables:
 
 ```bash
-GEMMA_MODEL=onnx-community/gemma-4-E4B-it-ONNX
+GEMMA_MODEL=onnx-community/gemma-4-E2B-it-ONNX
 GEMMA_DEVICE=dml                 # Windows default; use cpu in Docker/Linux
 GEMMA_DTYPE=q4
 GEMMA_API_URL=http://localhost:8016
