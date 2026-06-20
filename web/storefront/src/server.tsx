@@ -94,7 +94,8 @@ app.get('/', (_req, res) => {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
     <style>
-      body { margin: 0; }
+      html, body, #root { height: 100%; }
+      body { margin: 0; overflow: hidden; }
       .chat-message {
         max-width: 92%;
         padding: 10px 12px;
@@ -103,15 +104,15 @@ app.get('/', (_req, res) => {
         line-height: 1.45;
         font: 14px/1.45 Roboto, Arial, sans-serif;
       }
-      .chat-message.assistant { align-self: flex-start; background: #fff; color: #172326; border: 1px solid #dce5e6; }
-      .chat-message.user { align-self: flex-end; background: #175c62; color: #fff; }
+      .chat-message.assistant { align-self: flex-start; background: #122429; color: #f3fbfb; border: 1px solid #2a484f; }
+      .chat-message.user { align-self: flex-end; background: #17656c; color: #fff; }
       .chat-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
       .chat-action, .cart-row button {
-        border: 1px solid #b7c8ca;
-        background: #fff;
+        border: 1px solid #2a484f;
+        background: #0d1b1f;
         border-radius: 8px;
         padding: 7px 10px;
-        color: #175c62;
+        color: #4dd2d8;
         cursor: pointer;
         font: 700 13px Roboto, Arial, sans-serif;
       }
@@ -121,10 +122,10 @@ app.get('/', (_req, res) => {
         gap: 12px;
         align-items: center;
         padding: 10px 0;
-        border-top: 1px solid #dce5e6;
+        border-top: 1px solid #22383d;
       }
       .cart-row:first-child { border-top: 0; }
-      .cart-meta { color: #5b6b70; font-size: 13px; }
+      .cart-meta { color: #9fb6bb; font-size: 13px; }
     </style>
   </head>
   <body>

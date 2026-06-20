@@ -151,6 +151,82 @@ The container entrypoint runs `npm run seed` first, then starts:
 - Orchestrator on `8004`
 - Storefront on `8010`
 
+## Deploy with GitHub Actions
+
+The repository has a CI/CD workflow at
+`.github/workflows/deploy.yaml`. On every push to `main`, it runs
+typecheck and tests, builds the root Docker image, pushes it to Google Artifact
+Registry, and deploys one Cloud Run service containing the storefront, Gemma
+backend, orchestrator, and all worker agents.
+
+Run the one-time GCP setup first:
+
+```bash
+gcloud config set project YOUR_PROJECT_ID
+gcloud config set compute/region us-central1
+bash deploy/setup.sh
+```
+
+Then configure the GitHub repository:
+
+1. Open `Settings -> Secrets and variables -> Actions`.
+2. Add repository variables under the `Variables` tab.
+3. Add repository secrets under the `Secrets` tab.
+
+Repository variables:
+
+| Name | Example | Required | Notes |
+|---|---|---:|---|
+| `GCP_PROJECT_ID` | `my-gcp-project` | yes | Google Cloud project ID |
+| `GCP_REGION` | `us-central1` | no | Defaults to `us-central1` |
+| `ARTIFACT_REPOSITORY` | `techparts` | no | Artifact Registry Docker repository |
+| `CLOUD_RUN_SERVICE` | `techparts-workshop` | no | Cloud Run service name |
+
+Repository secrets:
+
+| Name | Example | Notes |
+|---|---|---|
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/123456789/locations/global/workloadIdentityPools/github/providers/github` | Full Workload Identity Provider resource name |
+| `GCP_SERVICE_ACCOUNT` | `github-deployer@my-gcp-project.iam.gserviceaccount.com` | Service account GitHub Actions will impersonate |
+
+Create the deployer service account if you do not already have one:
+
+```bash
+PROJECT_ID="my-gcp-project"
+SA_NAME="github-deployer"
+SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+
+gcloud iam service-accounts create "$SA_NAME" \
+  --project="$PROJECT_ID" \
+  --display-name="GitHub Actions Cloud Run deployer"
+```
+
+Grant it permissions to push images and deploy Cloud Run:
+
+```bash
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/artifactregistry.admin"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/run.admin"
+
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/iam.serviceAccountUser"
+```
+
+For authentication, prefer Workload Identity Federation instead of a downloaded
+JSON key. The secret `GCP_WORKLOAD_IDENTITY_PROVIDER` should contain the full
+provider resource name, and `GCP_SERVICE_ACCOUNT` should contain the service
+account email above. After those values are set, push to `main` or run the
+workflow manually from the GitHub Actions tab.
+
+The Cloud Run deployment exposes the service publicly with
+`--allow-unauthenticated` for workshop use. In Cloud Run the container listens on
+port `8080`; local Docker runs still use `8010`.
+
 ## Tests
 
 ```bash
