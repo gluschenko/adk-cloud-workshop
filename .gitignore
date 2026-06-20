@@ -5,3 +5,9 @@ dist/
 models/transformers-cache/
 models/
 
+
+# Python virtual environment
+deploy/venv/
+__pycache__/
+*.pyc
+*.pyo
