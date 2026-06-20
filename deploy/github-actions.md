@@ -21,12 +21,24 @@ Create these repository variables:
 | `ARTIFACT_REPOSITORY` | `techparts` | no, defaults to `techparts` |
 | `CLOUD_RUN_SERVICE` | `techparts-workshop` | no, defaults to `techparts-workshop` |
 
-Create these repository secrets:
+Create one of these repository secret sets.
+
+Recommended, keyless Workload Identity Federation:
 
 | Name | Example |
 |---|---|
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/123456789/locations/global/workloadIdentityPools/github/providers/github` |
 | `GCP_SERVICE_ACCOUNT` | `github-deployer@my-gcp-project.iam.gserviceaccount.com` |
+
+Quick service account key option:
+
+| Name | Example |
+|---|---|
+| `GCP_CREDENTIALS_JSON` | Full JSON key for the deployer service account |
+
+Do not set both `GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_CREDENTIALS_JSON`.
+The workflow intentionally fails if both are present or if neither auth option
+is configured.
 
 ## Required Google Cloud permissions
 
