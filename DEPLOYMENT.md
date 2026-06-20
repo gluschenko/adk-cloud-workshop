@@ -147,7 +147,9 @@ gcloud storage buckets create gs://$(gcloud config get-value project)-agent-engi
 
 **Step 4c — Deploy using the ADK CLI:**
 ```bash
+python3 -m venv deploy/venv
 source deploy/venv/bin/activate
+pip install "google-adk[a2a]" "google-cloud-aiplatform[agent_engines]"
 
 adk deploy agent_engine \
   --project=$(gcloud config get-value project) \
