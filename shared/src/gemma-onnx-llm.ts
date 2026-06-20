@@ -2,8 +2,9 @@ import { BaseLlm } from '@google/adk';
 import type { BaseLlmConnection, LlmRequest, LlmResponse } from '@google/adk';
 
 const DEFAULT_GEMMA_MODEL = 'onnx-community/gemma-4-E4B-it-ONNX';
-const DEFAULT_GEMMA_DEVICE = 'cpu';
+const DEFAULT_GEMMA_DEVICE = process.platform === 'win32' ? 'dml' : 'cpu';
 const DEFAULT_GEMMA_DTYPE = 'q4';
+const DEFAULT_GEMMA_API_URL = 'http://localhost:8010';
 const DEFAULT_MAX_NEW_TOKENS = 512;
 
 type ChatRole = 'system' | 'user' | 'assistant' | 'tool';
@@ -118,8 +119,89 @@ export class GemmaOnnxLlm extends BaseLlm {
   }
 }
 
-export function defaultModel(): GemmaOnnxLlm {
-  return new GemmaOnnxLlm();
+export class GemmaServiceLlm extends BaseLlm {
+  readonly endpoint: string;
+
+  constructor({
+    model = process.env.GEMMA_MODEL ?? DEFAULT_GEMMA_MODEL,
+    endpoint = process.env.GEMMA_API_URL ?? DEFAULT_GEMMA_API_URL,
+  }: {
+    model?: string;
+    endpoint?: string;
+  } = {}) {
+    super({ model });
+    this.endpoint = endpoint.replace(/\/+$/, '');
+  }
+
+  async *generateContentAsync(
+    llmRequest: LlmRequest,
+    stream = false,
+    abortSignal?: AbortSignal,
+  ): AsyncGenerator<LlmResponse, void> {
+    if (stream) {
+      yield {
+        errorCode: 'UNSUPPORTED_STREAMING',
+        errorMessage: 'The local Gemma service adapter currently supports non-streaming calls only.',
+      };
+      return;
+    }
+
+    try {
+      const response = await fetch(`${this.endpoint}/v1/adk/generate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: this.model,
+          request: toSerializableLlmRequest(llmRequest),
+        }),
+        signal: abortSignal,
+      });
+      const json = (await response.json().catch(() => ({}))) as LlmResponse & { error?: string };
+      if (!response.ok) {
+        yield {
+          errorCode: `HTTP_${response.status}`,
+          errorMessage: json.error ?? response.statusText,
+        };
+        return;
+      }
+      yield json;
+    } catch (err) {
+      yield {
+        errorCode: 'GEMMA_SERVICE_ERROR',
+        errorMessage: err instanceof Error ? formatServiceError(err, this.endpoint) : String(err),
+      };
+    }
+  }
+
+  async connect(_llmRequest: LlmRequest): Promise<BaseLlmConnection> {
+    throw new Error('Live connections are not supported by the local Gemma service adapter.');
+  }
+}
+
+export function defaultModel(): GemmaServiceLlm {
+  return new GemmaServiceLlm();
+}
+
+function toSerializableLlmRequest(llmRequest: LlmRequest): LlmRequest {
+  return {
+    contents: llmRequest.contents,
+    config: llmRequest.config,
+    liveConnectConfig: llmRequest.liveConnectConfig ?? {},
+    toolsDict: {},
+  };
+}
+
+function formatServiceError(err: Error, endpoint: string): string {
+  if ('cause' in err && err.cause && typeof err.cause === 'object' && 'code' in err.cause) {
+    const code = String((err.cause as { code?: unknown }).code);
+    if (code === 'ECONNREFUSED') {
+      return `Gemma service is not running at ${endpoint}. Start it with 'npm run dev:gemma'.`;
+    }
+  }
+  if (err.message === 'fetch failed') {
+    return `Could not reach Gemma service at ${endpoint}. Start it with 'npm run dev:gemma'.`;
+  }
+  return err.message;
 }
 
 async function getRuntime({

@@ -1,6 +1,6 @@
-import { GemmaOnnxLlm } from './gemma-onnx-llm.ts';
+import { GemmaServiceLlm } from './gemma-onnx-llm.ts';
 
-const model = new GemmaOnnxLlm();
+const model = new GemmaServiceLlm();
 const response = model.generateContentAsync({
   contents: [{ role: 'user', parts: [{ text: 'Say OK.' }] }],
   config: {

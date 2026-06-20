@@ -24,7 +24,8 @@ over the **A2A protocol** to resolve support cases end-to-end.
 npm install
 cp .env.example .env
 npm install @huggingface/transformers@latest
-npm run gemma:warmup       # downloads and verifies the Gemma 4 ONNX model
+npm run dev:gemma          # starts the shared Gemma ONNX model service
+npm run gemma:warmup       # verifies the shared model service
 npm run seed               # creates shared/data/techparts.db
 ```
 
@@ -35,6 +36,7 @@ The dev scripts load `.env` automatically.
 One terminal per service:
 
 ```bash
+npm run dev:gemma          # http://localhost:8010
 npm run dev:inventory      # http://localhost:8001
 npm run dev:orders         # http://localhost:8002
 npm run dev:pricing        # http://localhost:8003
@@ -45,12 +47,13 @@ Open each agent's URL in a browser: every agent ships a **debug console** showin
 the conversation and every tool call/result. Each agent also exposes its A2A
 endpoints (`/.well-known/agent-card.json`, `/rest`, `/jsonrpc`).
 
-All four ADK `LlmAgent`s use `onnx-community/gemma-4-E4B-it-ONNX` through
-Transformers.js in-process; they do not call Gemini and do not require a
-separate LLM service. `GEMMA_MODEL`, `GEMMA_DEVICE`, and `GEMMA_DTYPE` in `.env`
-control the local model id and ONNX runtime settings. The default device is
-`cpu`; use a Transformers.js-supported accelerator only after verifying it on
-your machine.
+All four ADK `LlmAgent`s call the shared local Gemma service via `GEMMA_API_URL`;
+they do not call Gemini. `npm run dev:gemma` is a Node.js process that loads
+`onnx-community/gemma-4-E4B-it-ONNX` once through Transformers.js and exposes an
+ADK-friendly `/v1/adk/generate` API. `GEMMA_MODEL`, `GEMMA_DEVICE`, and
+`GEMMA_DTYPE` control that service's ONNX runtime settings. On Windows the
+default is `dml` (DirectML GPU via ONNX Runtime). Use `cpu` as the fallback if
+DirectML is not available on your machine.
 
 The orchestrator finds the workers via env vars (`INVENTORY_AGENT_URL`,
 `ORDERS_AGENT_URL`, `PRICING_AGENT_URL`), defaulting to the local ports above.
