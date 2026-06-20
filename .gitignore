@@ -1,4 +1,14 @@
 node_modules/
 shared/data/*.db
 .env
+gha-creds-*.json
 dist/
+models/transformers-cache/
+models/
+
+
+# Python virtual environment
+deploy/venv/
+__pycache__/
+*.pyc
+*.pyo

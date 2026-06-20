@@ -2,22 +2,34 @@
   "name": "techparts-workshop",
   "private": true,
   "type": "module",
-  "workspaces": ["shared", "agents/*"],
+  "workspaces": [
+    "shared",
+    "agents/*",
+    "web/*"
+  ],
   "scripts": {
     "seed": "tsx shared/src/seed.ts",
+    "dev:storefront": "tsx --env-file-if-exists=.env web/storefront/src/server.tsx",
+    "dev:gemma": "tsx --env-file-if-exists=.env shared/src/gemma-server.ts",
     "dev:inventory": "tsx --env-file-if-exists=.env agents/inventory/src/server.ts",
     "dev:orders": "tsx --env-file-if-exists=.env agents/orders/src/server.ts",
     "dev:pricing": "tsx --env-file-if-exists=.env agents/pricing/src/server.ts",
     "dev:orchestrator": "tsx --env-file-if-exists=.env agents/orchestrator/src/server.ts",
+    "gemma:warmup": "tsx --env-file-if-exists=.env shared/src/gemma-warmup.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=24.0.0" },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^24.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
-    "@types/express": "^4.17.21",
-    "@types/node": "^24.0.0"
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0"
   }
 }
