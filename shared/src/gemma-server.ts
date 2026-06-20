@@ -2,7 +2,7 @@ import express from 'express';
 import { GemmaOnnxLlm } from './gemma-onnx-llm.ts';
 import type { LlmRequest, LlmResponse } from '@google/adk';
 
-const port = Number(process.env.GEMMA_API_PORT ?? 8010);
+const port = Number(process.env.GEMMA_API_PORT ?? 8016);
 const host = process.env.GEMMA_API_HOST ?? '127.0.0.1';
 const model = new GemmaOnnxLlm();
 const app = express();

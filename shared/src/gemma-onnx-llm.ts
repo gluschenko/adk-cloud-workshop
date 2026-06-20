@@ -1,10 +1,12 @@
 import { BaseLlm } from '@google/adk';
 import type { BaseLlmConnection, LlmRequest, LlmResponse } from '@google/adk';
+import path from 'node:path';
 
 const DEFAULT_GEMMA_MODEL = 'onnx-community/gemma-4-E4B-it-ONNX';
 const DEFAULT_GEMMA_DEVICE = process.platform === 'win32' ? 'dml' : 'cpu';
 const DEFAULT_GEMMA_DTYPE = 'q4';
-const DEFAULT_GEMMA_API_URL = 'http://localhost:8010';
+const DEFAULT_GEMMA_API_URL = 'http://localhost:8016';
+const DEFAULT_TRANSFORMERS_CACHE_DIR = path.join(process.cwd(), 'models', 'transformers-cache');
 const DEFAULT_MAX_NEW_TOKENS = 512;
 
 type ChatRole = 'system' | 'user' | 'assistant' | 'tool';
@@ -240,8 +242,14 @@ async function loadRuntime({
   }
 
   if (env && typeof env === 'object') {
-    (env as { allowLocalModels?: boolean; allowRemoteModels?: boolean }).allowLocalModels = true;
-    (env as { allowLocalModels?: boolean; allowRemoteModels?: boolean }).allowRemoteModels = true;
+    const transformersEnv = env as {
+      allowLocalModels?: boolean;
+      allowRemoteModels?: boolean;
+      cacheDir?: string | null;
+    };
+    transformersEnv.allowLocalModels = true;
+    transformersEnv.allowRemoteModels = true;
+    transformersEnv.cacheDir = path.resolve(process.env.TRANSFORMERS_CACHE_DIR ?? DEFAULT_TRANSFORMERS_CACHE_DIR);
   }
 
   const processor = await (AutoProcessor as { from_pretrained: (id: string) => Promise<TransformersRuntime['processor']> }).from_pretrained(modelId);

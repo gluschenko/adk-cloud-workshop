@@ -1,0 +1,11 @@
+.git
+.agents
+.codex
+node_modules
+**/node_modules
+npm-debug.log*
+storefront*.log
+*.local
+.env
+shared/data/*.db
+models/transformers-cache
