@@ -87,7 +87,7 @@ Useful environment variables:
 
 ```bash
 GEMMA_MODEL=onnx-community/gemma-4-E4B-it-ONNX
-GEMMA_DEVICE=dml                 # Windows default; use cpu in Docker/Linux
+GEMMA_DEVICE=cpu                 # Windows default; use cpu in Docker/Linux
 GEMMA_DTYPE=q4
 GEMMA_API_URL=http://localhost:8016
 GEMMA_API_HOST=127.0.0.1
