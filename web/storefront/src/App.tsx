@@ -163,83 +163,124 @@ export function App({ products }: { products: StoreProduct[] }) {
         </AppBar>
 
         <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
-          <Grid container spacing={3} alignItems="stretch">
-            <Grid size={{ xs: 12, lg: 8 }}>
-              <Paper
-                sx={{
-                  minHeight: 360,
-                  p: { xs: 3, md: 5 },
-                  display: 'flex',
-                  alignItems: 'center',
-                  bgcolor: '#123f44',
-                  color: '#f8fafc',
-                  backgroundImage:
-                    'radial-gradient(circle at 82% 18%, rgba(255,255,255,0.18), transparent 30%), linear-gradient(135deg, #123f44, #1b6b70)',
-                }}
-              >
-                <Stack spacing={2.5} sx={{ maxWidth: 720 }}>
-                  <Chip label="SSR storefront + AI cart actions" sx={{ width: 'fit-content', bgcolor: '#f8fafc', fontWeight: 800 }} />
-                  <Typography variant="h1">Storefront powered by the seeded TechParts database</Typography>
-                  <Typography variant="h6" sx={{ color: '#d8e7e8', maxWidth: 620 }}>
-                    The catalog is rendered from the SQLite database created by npm run seed. The assistant can surface
-                    products from agent results and add SKU-based items to the local cart.
+          <Box
+            sx={{
+              minHeight: { md: 'calc(100vh - 122px)' },
+              display: 'grid',
+              alignItems: 'center',
+            }}
+          >
+            <Grid container spacing={3} alignItems="stretch" justifyContent="center">
+              <Grid size={{ xs: 12, lg: 9 }}>
+                <Stack spacing={2.5} sx={{ textAlign: 'center', mb: 2.5, alignItems: 'center' }}>
+                  <Chip label="AI orchestrator workspace" color="secondary" sx={{ width: 'fit-content', fontWeight: 900 }} />
+                  <Typography variant="h1" sx={{ maxWidth: 900 }}>
+                    Start with the assistant
                   </Typography>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                    <Button variant="contained" color="secondary" size="large" href="#catalog">
-                      Browse catalog
-                    </Button>
-                    <Button variant="outlined" size="large" href="#assistant" sx={{ color: '#fff', borderColor: '#b7d4d6' }}>
-                      Ask the assistant
-                    </Button>
-                  </Stack>
+                  <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 760 }}>
+                    Ask it to check orders, search inventory, compare pricing, and add known SKUs to the browser cart.
+                    The catalog and cart are support surfaces below.
+                  </Typography>
                 </Stack>
-              </Paper>
-            </Grid>
 
-            <Grid size={{ xs: 12, lg: 4 }}>
-              <Paper id="assistant" sx={{ height: '100%', minHeight: 360, p: 2.5, border: '1px solid #dce5e6' }}>
-                <Stack spacing={2} sx={{ height: '100%' }}>
-                  <Box>
-                    <Typography variant="h2">AI Assistant</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Mirrors the current orchestrator agent and can add known SKUs to the local cart.
-                    </Typography>
-                  </Box>
-                  <Box
-                    id="chat-log"
-                    sx={{
-                      flex: 1,
-                      minHeight: 180,
-                      maxHeight: 360,
-                      overflowY: 'auto',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 1,
-                      p: 1,
-                      bgcolor: '#f4f7f7',
-                      borderRadius: 1,
-                    }}
-                  >
-                    <Box className="chat-message assistant">
-                      Hi. I can check an order, find in-stock products, compare prices, and add a SKU to your cart.
+                <Paper
+                  id="assistant"
+                  sx={{
+                    minHeight: { xs: 560, md: 650 },
+                    p: { xs: 2, md: 3 },
+                    border: '1px solid #c8d6d8',
+                    boxShadow: '0 28px 80px rgba(23,35,38,0.18)',
+                    bgcolor: '#ffffff',
+                  }}
+                >
+                  <Stack spacing={2.5} sx={{ height: '100%' }}>
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }}>
+                      <Box sx={{ textAlign: { xs: 'left', md: 'left' } }}>
+                        <Typography variant="h2">AI Assistant</Typography>
+                        <Typography variant="body1" color="text.secondary">
+                          The main control surface for the TechParts agents and cart.
+                        </Typography>
+                      </Box>
+                      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                        <Chip label="Orders" />
+                        <Chip label="Inventory" />
+                        <Chip label="Pricing" />
+                        <Chip label="Cart actions" color="primary" />
+                      </Stack>
+                    </Stack>
+
+                    <Box
+                      id="chat-log"
+                      sx={{
+                        flex: 1,
+                        minHeight: { xs: 300, md: 410 },
+                        maxHeight: { xs: 430, md: 520 },
+                        overflowY: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1.25,
+                        p: { xs: 1.25, md: 2 },
+                        bgcolor: '#f4f7f7',
+                        borderRadius: 1,
+                        border: '1px solid #dce5e6',
+                      }}
+                    >
+                      <Box className="chat-message assistant">
+                        Hi. I can check an order, find in-stock products, compare prices, and add a SKU to your cart.
+                      </Box>
                     </Box>
-                  </Box>
-                  <Box component="form" id="chat-form" sx={{ display: 'flex', gap: 1 }}>
-                    <InputBase
-                      id="chat-input"
-                      placeholder="Try: add SONY-WH1000XM5 to cart"
-                      sx={{ flex: 1, px: 1.5, py: 1, bgcolor: '#fff', border: '1px solid #dce5e6', borderRadius: 1 }}
-                    />
-                    <Button type="submit" variant="contained">
-                      Send
-                    </Button>
-                  </Box>
-                </Stack>
-              </Paper>
-            </Grid>
-          </Grid>
 
-          <Paper id="cart-panel" sx={{ mt: 3, p: 2.5, border: '1px solid #dce5e6' }}>
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+                      <Button variant="outlined" href="#catalog">
+                        Browse product data
+                      </Button>
+                      <Button variant="outlined" href="#cart-panel">
+                        Review local cart
+                      </Button>
+                    </Stack>
+
+                    <Box component="form" id="chat-form" sx={{ display: 'flex', gap: 1 }}>
+                      <InputBase
+                        id="chat-input"
+                        placeholder="Try: customer 1042 wants a return alternative, or add SONY-WH1000XM5 to cart"
+                        sx={{
+                          flex: 1,
+                          px: 1.75,
+                          py: 1.35,
+                          bgcolor: '#fff',
+                          border: '1px solid #b7c8ca',
+                          borderRadius: 1,
+                          fontSize: 16,
+                        }}
+                      />
+                      <Button type="submit" variant="contained" size="large">
+                        Send
+                      </Button>
+                    </Box>
+                  </Stack>
+                </Paper>
+              </Grid>
+
+              <Grid size={{ xs: 12, lg: 3 }}>
+                <Stack spacing={2} sx={{ height: '100%', justifyContent: 'center' }}>
+                  <Paper sx={{ p: 2.5, border: '1px solid #dce5e6', bgcolor: '#f9fbfb' }}>
+                    <Typography variant="h3">{products.length}</Typography>
+                    <Typography color="text.secondary">seeded products available for the assistant and catalog</Typography>
+                  </Paper>
+                  <Paper sx={{ p: 2.5, border: '1px solid #dce5e6', bgcolor: '#f9fbfb' }}>
+                    <Typography variant="h3">A2A</Typography>
+                    <Typography color="text.secondary">orchestrator routes requests to inventory, orders, and pricing agents</Typography>
+                  </Paper>
+                  <Paper sx={{ p: 2.5, border: '1px solid #dce5e6', bgcolor: '#f9fbfb' }}>
+                    <Typography variant="h3">Local</Typography>
+                    <Typography color="text.secondary">cart state stays in this browser through localStorage</Typography>
+                  </Paper>
+                </Stack>
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Paper id="cart-panel" sx={{ mt: 5, p: 2.5, border: '1px solid #dce5e6', bgcolor: '#fbfdfd' }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between">
               <Box>
                 <Typography variant="h2">Local Cart</Typography>
@@ -261,7 +302,7 @@ export function App({ products }: { products: StoreProduct[] }) {
             </Stack>
           </Paper>
 
-          <Stack id="catalog" spacing={2.5} sx={{ mt: 5 }}>
+          <Stack id="catalog" spacing={2.5} sx={{ mt: 4, opacity: 0.92 }}>
             <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={2}>
               <Box>
                 <Typography variant="h2">Product Catalog</Typography>

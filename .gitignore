@@ -1,6 +1,7 @@
 node_modules/
 shared/data/*.db
 .env
+gha-creds-*.json
 dist/
 models/transformers-cache/
 models/
