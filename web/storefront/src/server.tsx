@@ -106,6 +106,28 @@ app.get('/', (_req, res) => {
       }
       .chat-message.assistant { align-self: flex-start; background: #122429; color: #f3fbfb; border: 1px solid #2a484f; }
       .chat-message.user { align-self: flex-end; background: #17656c; color: #fff; }
+      .chat-tool {
+        align-self: flex-start;
+        max-width: 92%;
+        border: 1px dashed #2a484f;
+        border-radius: 8px;
+        padding: 7px 12px;
+        color: #9fb6bb;
+        font: 13px/1.45 Roboto, Arial, sans-serif;
+      }
+      .chat-tool summary { cursor: pointer; user-select: none; }
+      .chat-tool .tool-name { color: #f0b85a; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+      .chat-tool .tool-agent { color: #9fb6bb; font-size: 11px; }
+      .chat-tool.result .tool-name { color: #4dd2d8; }
+      .chat-tool pre {
+        margin: 8px 0 4px;
+        padding: 10px;
+        background: #122429;
+        border-radius: 8px;
+        overflow-x: auto;
+        color: #f3fbfb;
+        font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
       .chat-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
       .chat-action, .cart-row button {
         border: 1px solid #2a484f;
