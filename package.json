@@ -4,10 +4,12 @@
   "type": "module",
   "workspaces": [
     "shared",
-    "agents/*"
+    "agents/*",
+    "web/*"
   ],
   "scripts": {
     "seed": "tsx shared/src/seed.ts",
+    "dev:storefront": "tsx --env-file-if-exists=.env web/storefront/src/server.ts",
     "dev:inventory": "tsx --env-file-if-exists=.env agents/inventory/src/server.ts",
     "dev:orders": "tsx --env-file-if-exists=.env agents/orders/src/server.ts",
     "dev:pricing": "tsx --env-file-if-exists=.env agents/pricing/src/server.ts",
