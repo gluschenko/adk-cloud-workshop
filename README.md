@@ -93,6 +93,8 @@ GEMMA_API_URL=http://localhost:8016
 GEMMA_API_HOST=127.0.0.1
 GEMMA_API_PORT=8016
 TRANSFORMERS_CACHE_DIR=models/transformers-cache
+TRANSFORMERS_OFFLINE=false       # set true only after the cache is complete
+HF_ENDPOINT=                     # optional Hugging Face-compatible mirror
 INVENTORY_AGENT_URL=http://localhost:8001
 ORDERS_AGENT_URL=http://localhost:8002
 PRICING_AGENT_URL=http://localhost:8003
@@ -102,6 +104,13 @@ STOREFRONT_PORT=8010
 
 On Windows the default Gemma device is `dml` for DirectML. In Docker/Linux the
 Dockerfile sets `GEMMA_DEVICE=cpu`.
+
+The first `npm run dev:gemma` downloads the model into
+`TRANSFORMERS_CACHE_DIR`. If the download times out, rerun the command; partial
+`.tmp...` files in the cache mean the download did not finish yet. Once the
+cache is complete, set `TRANSFORMERS_OFFLINE=true` to force local-only startup.
+If Hugging Face is blocked or slow on your network, set `HF_ENDPOINT` to a
+reachable Hugging Face-compatible mirror before retrying.
 
 ## Docker
 

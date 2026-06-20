@@ -8,6 +8,7 @@ const DEFAULT_GEMMA_DTYPE = 'q4';
 const DEFAULT_GEMMA_API_URL = 'http://localhost:8016';
 const DEFAULT_TRANSFORMERS_CACHE_DIR = path.join(process.cwd(), 'models', 'transformers-cache');
 const DEFAULT_MAX_NEW_TOKENS = 512;
+const TRUE_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 type ChatRole = 'system' | 'user' | 'assistant' | 'tool';
 
@@ -215,7 +216,10 @@ async function getRuntime({
   device: string;
   dtype: string;
 }): Promise<TransformersRuntime> {
-  runtimePromise ??= loadRuntime({ modelId, device, dtype });
+  runtimePromise ??= loadRuntime({ modelId, device, dtype }).catch((err: unknown) => {
+    runtimePromise = undefined;
+    throw err;
+  });
   return runtimePromise;
 }
 
@@ -246,23 +250,91 @@ async function loadRuntime({
       allowLocalModels?: boolean;
       allowRemoteModels?: boolean;
       cacheDir?: string | null;
+      remoteHost?: string;
     };
     transformersEnv.allowLocalModels = true;
-    transformersEnv.allowRemoteModels = true;
-    transformersEnv.cacheDir = path.resolve(process.env.TRANSFORMERS_CACHE_DIR ?? DEFAULT_TRANSFORMERS_CACHE_DIR);
+    transformersEnv.allowRemoteModels = !isTruthy(process.env.TRANSFORMERS_OFFLINE);
+    transformersEnv.cacheDir = getTransformersCacheDir();
+    transformersEnv.remoteHost = normalizeRemoteHost(process.env.HF_ENDPOINT ?? process.env.TRANSFORMERS_REMOTE_HOST) ?? transformersEnv.remoteHost;
   }
 
-  const processor = await (AutoProcessor as { from_pretrained: (id: string) => Promise<TransformersRuntime['processor']> }).from_pretrained(modelId);
-  const model = await (
-    Gemma4ForConditionalGeneration as {
-      from_pretrained: (id: string, options: Record<string, unknown>) => Promise<TransformersRuntime['model']>;
-    }
-  ).from_pretrained(modelId, {
-    dtype,
-    device,
-  });
+  const loadOptions = {
+    cache_dir: getTransformersCacheDir(),
+    local_files_only: isTruthy(process.env.TRANSFORMERS_OFFLINE) || isTruthy(process.env.TRANSFORMERS_LOCAL_FILES_ONLY),
+  };
 
-  return { processor, model };
+  try {
+    const processor = await (
+      AutoProcessor as {
+        from_pretrained: (id: string, options?: Record<string, unknown>) => Promise<TransformersRuntime['processor']>;
+      }
+    ).from_pretrained(modelId, loadOptions);
+    const model = await (
+      Gemma4ForConditionalGeneration as {
+        from_pretrained: (id: string, options: Record<string, unknown>) => Promise<TransformersRuntime['model']>;
+      }
+    ).from_pretrained(modelId, {
+      ...loadOptions,
+      dtype,
+      device,
+    });
+
+    return { processor, model };
+  } catch (err) {
+    throw new Error(formatModelLoadError(err, modelId, getTransformersCacheDir()), { cause: err });
+  }
+}
+
+function getTransformersCacheDir(): string {
+  return path.resolve(process.env.TRANSFORMERS_CACHE_DIR ?? DEFAULT_TRANSFORMERS_CACHE_DIR);
+}
+
+function normalizeRemoteHost(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  return value.endsWith('/') ? value : `${value}/`;
+}
+
+function isTruthy(value: string | undefined): boolean {
+  return TRUE_VALUES.has((value ?? '').toLowerCase());
+}
+
+function formatModelLoadError(err: unknown, modelId: string, cacheDir: string): string {
+  const message = err instanceof Error ? err.message : String(err);
+  const code = getErrorCode(err);
+  const localOnly = isTruthy(process.env.TRANSFORMERS_OFFLINE) || isTruthy(process.env.TRANSFORMERS_LOCAL_FILES_ONLY);
+  const remote = normalizeRemoteHost(process.env.HF_ENDPOINT ?? process.env.TRANSFORMERS_REMOTE_HOST) ?? 'https://huggingface.co/';
+
+  if (localOnly) {
+    return [
+      `Could not load ${modelId} from the local Transformers cache at ${cacheDir}.`,
+      'Disable TRANSFORMERS_OFFLINE/TRANSFORMERS_LOCAL_FILES_ONLY until the model has downloaded completely, or point TRANSFORMERS_CACHE_DIR at a complete cache.',
+      `Original error: ${message}`,
+    ].join(' ');
+  }
+
+  if (message === 'fetch failed' || code?.startsWith('UND_ERR_') || code === 'ETIMEDOUT' || code === 'ECONNRESET') {
+    return [
+      `Timed out while downloading ${modelId} from ${remote}.`,
+      `Transformers.js will resume into ${cacheDir} on the next run, but the cache must contain all model shards before Gemma can start.`,
+      'Retry `npm run dev:gemma`, check VPN/proxy/firewall access to Hugging Face, or set HF_ENDPOINT/TRANSFORMERS_REMOTE_HOST to a reachable mirror.',
+      'After the cache is complete, set TRANSFORMERS_OFFLINE=true to run without network access.',
+      `Original error: ${message}`,
+    ].join(' ');
+  }
+
+  return `Could not load ${modelId} with Transformers.js using cache ${cacheDir}. Original error: ${message}`;
+}
+
+function getErrorCode(err: unknown): string | undefined {
+  if (!err || typeof err !== 'object') return undefined;
+  const direct = (err as { code?: unknown }).code;
+  if (typeof direct === 'string') return direct;
+  const cause = (err as { cause?: unknown }).cause;
+  if (cause && typeof cause === 'object') {
+    const code = (cause as { code?: unknown }).code;
+    if (typeof code === 'string') return code;
+  }
+  return undefined;
 }
 
 function toChatMessages(llmRequest: LlmRequest): ChatMessage[] {
