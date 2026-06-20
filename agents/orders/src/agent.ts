@@ -1,9 +1,10 @@
 import { LlmAgent } from '@google/adk';
+import { defaultModel } from '@techparts/shared';
 import { checkReturnEligibilityTool, getCustomerOrdersTool, getOrderDetailsTool } from './tools.ts';
 
 export const rootAgent = new LlmAgent({
   name: 'orders_agent',
-  model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
+  model: defaultModel(),
   description:
     'Answers questions about TechParts customer orders: order history, order details, and return eligibility under the 30-day return policy.',
   instruction: `You are the orders agent for TechParts, a consumer-electronics retailer. You assist internal support staff.

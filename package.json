@@ -2,22 +2,32 @@
   "name": "techparts-workshop",
   "private": true,
   "type": "module",
-  "workspaces": ["shared", "agents/*"],
+  "workspaces": [
+    "shared",
+    "agents/*"
+  ],
   "scripts": {
     "seed": "tsx shared/src/seed.ts",
     "dev:inventory": "tsx --env-file-if-exists=.env agents/inventory/src/server.ts",
     "dev:orders": "tsx --env-file-if-exists=.env agents/orders/src/server.ts",
     "dev:pricing": "tsx --env-file-if-exists=.env agents/pricing/src/server.ts",
     "dev:orchestrator": "tsx --env-file-if-exists=.env agents/orchestrator/src/server.ts",
+    "gemma:setup": "powershell -ExecutionPolicy Bypass -File scripts/gemma-setup.ps1",
+    "gemma:download": "onnxify hf download litert-community/gemma-4-E4B-it-litert-lm models/gemma4-e4b-native-q --include gemma-4-E4B-it.litertlm --overwrite",
+    "gemma:import": "powershell -ExecutionPolicy Bypass -File scripts/litert-lm.ps1 import models/gemma4-e4b-native-q/gemma-4-E4B-it.litertlm gemma4-e4b-native-q",
+    "dev:gemma": "powershell -ExecutionPolicy Bypass -File scripts/litert-lm.ps1 serve --host 127.0.0.1 --port 8010",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "engines": { "node": ">=24.0.0" },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^24.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
-    "@types/express": "^4.17.21",
-    "@types/node": "^24.0.0"
-  }
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {}
 }

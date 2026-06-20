@@ -1,4 +1,5 @@
 import { AgentTool, LlmAgent, RemoteA2AAgent } from '@google/adk';
+import { defaultModel } from '@techparts/shared';
 
 const INVENTORY_URL = process.env.INVENTORY_AGENT_URL ?? 'http://localhost:8001';
 const ORDERS_URL = process.env.ORDERS_AGENT_URL ?? 'http://localhost:8002';
@@ -30,7 +31,7 @@ const pricingAgent = new RemoteA2AAgent({
 
 export const rootAgent = new LlmAgent({
   name: 'ops_orchestrator',
-  model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
+  model: defaultModel(),
   description:
     'TechParts operations assistant for support staff. Coordinates the inventory, orders and pricing agents to resolve customer cases end-to-end.',
   instruction: `You are the TechParts operations assistant used by internal support staff.
