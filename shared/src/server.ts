@@ -61,6 +61,8 @@ export async function startAgentServer({ agent, port, title }: AgentServerOption
 
     try {
       await sessionService.getOrCreateSession({ appName: agent.name, userId: 'console', sessionId });
+      let sentText = false;
+      let fallbackText = '';
       for await (const event of runner.runAsync({
         userId: 'console',
         sessionId,
@@ -71,14 +73,21 @@ export async function startAgentServer({ agent, port, title }: AgentServerOption
         }
         for (const result of getFunctionResponses(event)) {
           send('tool_result', { agent: event.author, name: result.name, response: result.response });
+          fallbackText = extractReadableToolResponse(result.response) ?? fallbackText;
         }
         if (event.errorMessage) {
           send('error', { agent: event.author, message: `${event.errorCode ?? 'error'}: ${event.errorMessage}` });
         }
         if (isFinalResponse(event)) {
           const text = stringifyContent(event);
-          if (text) send('text', { agent: event.author, text });
+          if (text) {
+            sentText = true;
+            send('text', { agent: event.author, text });
+          }
         }
+      }
+      if (!sentText && fallbackText) {
+        send('text', { agent: agent.name, text: fallbackText });
       }
       send('done', {});
     } catch (err) {
@@ -97,4 +106,12 @@ export async function startAgentServer({ agent, port, title }: AgentServerOption
       resolve(server);
     });
   });
+}
+
+function extractReadableToolResponse(response: unknown): string | undefined {
+  if (!response || typeof response !== 'object' || Array.isArray(response)) return undefined;
+  const record = response as Record<string, unknown>;
+  if (typeof record.result === 'string' && record.result.trim()) return record.result.trim();
+  if (typeof record.error === 'string' && record.error.trim()) return record.error.trim();
+  return undefined;
 }

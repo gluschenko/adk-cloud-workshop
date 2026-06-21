@@ -1,9 +1,61 @@
 import { BaseLlm } from '@google/adk';
 import type { BaseLlmConnection, LlmRequest, LlmResponse } from '@google/adk';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-const DEFAULT_GEMMA_MODEL = 'onnx-community/gemma-4-E4B-it-ONNX';
-const DEFAULT_GEMMA_DEVICE = process.platform === 'win32' ? 'dml' : 'cpu';
+type GemmaDevice = 'cuda' | 'dml' | 'webgpu' | 'cpu';
+
+function hasAccessibleNvidiaGpu(): boolean {
+    const cudaVisibleDevices = process.env.CUDA_VISIBLE_DEVICES?.trim();
+
+    if (cudaVisibleDevices === '' || cudaVisibleDevices === '-1') {
+        return false;
+    }
+
+    const command =
+        process.platform === 'win32'
+            ? 'nvidia-smi.exe'
+            : 'nvidia-smi';
+
+    const result = spawnSync(
+        command,
+        ['--query-gpu=index', '--format=csv,noheader'],
+        {
+            encoding: 'utf8',
+            windowsHide: true,
+            timeout: 3_000,
+        },
+    );
+
+    return (
+        result.status === 0 &&
+        typeof result.stdout === 'string' &&
+        result.stdout.trim().length > 0
+    );
+}
+
+function getDefaultGemmaDevice(): GemmaDevice {
+    if (
+        process.platform === 'linux' &&
+        process.arch === 'x64' &&
+        hasAccessibleNvidiaGpu()
+    ) {
+        return 'cuda';
+    }
+
+    if (process.platform === 'darwin') {
+        return 'webgpu';
+    }
+
+    if (process.platform === 'win32') {
+        return 'dml';
+    }
+
+    return 'cpu';
+}
+
+const DEFAULT_GEMMA_MODEL = 'onnx-community/gemma-4-E2B-it-ONNX';
+const DEFAULT_GEMMA_DEVICE = getDefaultGemmaDevice();
 const DEFAULT_GEMMA_DTYPE = 'q4';
 const DEFAULT_GEMMA_API_URL = 'http://localhost:8016';
 const DEFAULT_TRANSFORMERS_CACHE_DIR = path.join(process.cwd(), 'models', 'transformers-cache');
@@ -44,9 +96,9 @@ export class GemmaOnnxLlm extends BaseLlm {
   readonly dtype: string;
 
   constructor({
-    model = process.env.GEMMA_MODEL ?? DEFAULT_GEMMA_MODEL,
-    device = process.env.GEMMA_DEVICE ?? DEFAULT_GEMMA_DEVICE,
-    dtype = process.env.GEMMA_DTYPE ?? DEFAULT_GEMMA_DTYPE,
+    model = process.env.GEMMA_MODEL || DEFAULT_GEMMA_MODEL,
+    device = process.env.GEMMA_DEVICE || DEFAULT_GEMMA_DEVICE,
+    dtype = process.env.GEMMA_DTYPE || DEFAULT_GEMMA_DTYPE,
   }: {
     model?: string;
     device?: string;
@@ -483,18 +535,21 @@ function stripThought(content: string): string {
   return content.replace(/<\|channel\>thought[\s\S]*?<channel\|>/g, '');
 }
 
-function parseToolCalls(content: string): ToolCall[] | undefined {
+export function parseToolCalls(content: string): ToolCall[] | undefined {
   const parsed = parseJsonObject(content);
   const calls = parsed.tool_calls;
-  if (!Array.isArray(calls)) return undefined;
-  return calls.map((call, index) => ({
-    id: typeof call.id === 'string' ? call.id : `call_${index + 1}`,
-    type: 'function',
-    function: {
-      name: String(call.name ?? call.function?.name ?? ''),
-      arguments: JSON.stringify(call.arguments ?? call.function?.arguments ?? {}),
-    },
-  }));
+  if (Array.isArray(calls)) {
+    return calls.map((call, index) => ({
+      id: typeof call.id === 'string' ? call.id : `call_${index + 1}`,
+      type: 'function',
+      function: {
+        name: String(call.name ?? call.function?.name ?? ''),
+        arguments: JSON.stringify(call.arguments ?? call.function?.arguments ?? {}),
+      },
+    }));
+  }
+
+  return parseInlineToolCalls(content);
 }
 
 function parseJsonObject(value: string): Record<string, unknown> {
@@ -504,4 +559,128 @@ function parseJsonObject(value: string): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+function parseInlineToolCalls(content: string): ToolCall[] | undefined {
+  const text = content.trim();
+  if (!/^call\s*:/i.test(text)) return undefined;
+
+  const calls: ToolCall[] = [];
+  let position = 0;
+
+  while (position < text.length) {
+    position = skipSeparators(text, position);
+    if (position >= text.length) break;
+
+    const match = /^call\s*:\s*([A-Za-z_][\w.-]*)\s*/i.exec(text.slice(position));
+    if (!match) return undefined;
+
+    const name = match[1];
+    let argsStart = position + match[0].length;
+    argsStart = skipWhitespace(text, argsStart);
+    if (text[argsStart] !== '{') return undefined;
+
+    const argsEnd = findMatchingBrace(text, argsStart);
+    if (argsEnd === -1) return undefined;
+
+    const argsText = text.slice(argsStart, argsEnd + 1);
+    const args = parseInlineArguments(argsText);
+    calls.push({
+      id: `call_${calls.length + 1}`,
+      type: 'function',
+      function: {
+        name,
+        arguments: JSON.stringify(args),
+      },
+    });
+
+    position = argsEnd + 1;
+  }
+
+  return calls.length ? calls : undefined;
+}
+
+function parseInlineArguments(value: string): Record<string, unknown> {
+  const parsed = parseJsonObject(value);
+  if (Object.keys(parsed).length) return parsed;
+
+  const inner = value.trim().replace(/^\{|\}$/g, '').trim();
+  if (!inner) return {};
+
+  const args: Record<string, unknown> = {};
+  for (const entry of splitLooseEntries(inner)) {
+    const separator = entry.indexOf(':');
+    if (separator === -1) continue;
+
+    const key = entry.slice(0, separator).trim().replace(/^["']|["']$/g, '');
+    if (!key) continue;
+
+    const rawValue = entry.slice(separator + 1).trim();
+    args[key] = parseLooseValue(rawValue);
+  }
+  return args;
+}
+
+function parseLooseValue(value: string): unknown {
+  const trimmed = value.trim().replace(/^["']|["']$/g, '');
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+  if (/^(true|false)$/i.test(trimmed)) return trimmed.toLowerCase() === 'true';
+  if (/^null$/i.test(trimmed)) return null;
+  return trimmed;
+}
+
+function splitLooseEntries(value: string): string[] {
+  const entries: string[] = [];
+  let start = 0;
+  let quote: string | undefined;
+
+  for (let i = 0; i < value.length; i += 1) {
+    const char = value[i];
+    const previous = value[i - 1];
+    if ((char === '"' || char === "'") && previous !== '\\') {
+      quote = quote === char ? undefined : quote ?? char;
+      continue;
+    }
+    if (char === ',' && !quote) {
+      entries.push(value.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+
+  entries.push(value.slice(start).trim());
+  return entries.filter(Boolean);
+}
+
+function findMatchingBrace(value: string, start: number): number {
+  let depth = 0;
+  let quote: string | undefined;
+
+  for (let i = start; i < value.length; i += 1) {
+    const char = value[i];
+    const previous = value[i - 1];
+    if ((char === '"' || char === "'") && previous !== '\\') {
+      quote = quote === char ? undefined : quote ?? char;
+      continue;
+    }
+    if (quote) continue;
+    if (char === '{') depth += 1;
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+
+  return -1;
+}
+
+function skipSeparators(value: string, position: number): number {
+  let next = position;
+  while (/[\s,;]/.test(value[next] ?? '')) next += 1;
+  return next;
+}
+
+function skipWhitespace(value: string, position: number): number {
+  let next = position;
+  while (/\s/.test(value[next] ?? '')) next += 1;
+  return next;
 }

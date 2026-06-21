@@ -153,6 +153,27 @@ function appendMessage(role, text) {
   return message;
 }
 
+function appendTool(kind, data) {
+  const tool = document.createElement('details');
+  tool.className = `chat-tool${kind === 'result' ? ' result' : ''}`;
+
+  const summary = document.createElement('summary');
+  const label = document.createElement('span');
+  label.className = 'tool-name';
+  label.textContent = kind === 'result' ? `${data.name} -> result` : `${data.name}()`;
+  const who = document.createElement('span');
+  who.className = 'tool-agent';
+  who.textContent = `by ${data.agent || 'agent'}`;
+  summary.append(document.createTextNode(kind === 'result' ? 'ok ' : 'call '), label, document.createTextNode(' '), who);
+
+  const body = document.createElement('pre');
+  body.textContent = JSON.stringify(kind === 'result' ? data.response : data.args, null, 2);
+  tool.append(summary, body);
+  chatLog.append(tool);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return tool;
+}
+
 function announceCartAction(text) {
   appendMessage('assistant', text);
 }
@@ -243,9 +264,11 @@ chatForm?.addEventListener('submit', async (event) => {
         if (packet.event === 'tool_call') {
           trace.push(`Calling ${packet.data.name}`);
           pending.textContent = trace.join(' - ');
+          appendTool('call', packet.data);
         }
         if (packet.event === 'tool_result') {
           candidateSkus.push(...extractKnownSkus(packet.data.response));
+          appendTool('result', packet.data);
         }
         if (packet.event === 'text') {
           finalText += packet.data.text;
