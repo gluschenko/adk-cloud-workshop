@@ -156,7 +156,6 @@ function appendMessage(role, text) {
 function appendTool(kind, data) {
   const tool = document.createElement('details');
   tool.className = `chat-tool${kind === 'result' ? ' result' : ''}`;
-  tool.open = true;
 
   const summary = document.createElement('summary');
   const label = document.createElement('span');
